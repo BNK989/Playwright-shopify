@@ -1,0 +1,41 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+.vscode
+dist
+.yaml
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+todo.md
+
+# for vercel ignoring middleware
+# middleware
+# middleware/**/*
+pnpm-lock.yaml
+settings.json
+temp-test.js
+
+unused_plugins/
+data
+screenshots
+
+getProductInternalId.js
+archive-index.js
