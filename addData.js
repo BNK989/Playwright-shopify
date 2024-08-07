@@ -9,7 +9,7 @@ import { filterColorTags } from './utiles.js'
 let YotpoStoreCode
 
 
-async function addData(handleArr, domainName) {
+export async function addData(handleArr, domainName) {
     const products = handleArr.map(h => ({ handle: h}))
     // const existingData = await fs.promises.readFile('data/results.json', {encoding: 'utf8'}).then(p => {
     //     if (p) {
@@ -17,7 +17,10 @@ async function addData(handleArr, domainName) {
     //     } else return []
     // })
 
-    for( const p of products ) {
+    try {
+        
+        
+        for( const p of products ) {
 
         // const existingInternalID = existingData.find(ep => ep.id === p.handle)
         // if (existingInternalID?.productInternalId && false) {
@@ -49,7 +52,7 @@ async function addData(handleArr, domainName) {
             p.ratingUpdateAt = new Date()
         }
     }
-
+    
     const folderName = `data/${domainName.replace('.', '-')}`	 
     await fs.promises.mkdir(folderName, { recursive: true })
     
@@ -66,6 +69,11 @@ async function addData(handleArr, domainName) {
           return
         }
     })
+    
+    return { success: true, data: products }
+} catch (error) {
+    return { success: false, error }
+}
     
 }
 
