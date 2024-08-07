@@ -13,7 +13,7 @@ export function cleanProductData(products) {
 
 export const takeScreenShot = async (page, log) => {
     console.log(log ? log + ' 📸 ' : 'Taking screenshot to page.png')
-    const folderName = `screenshots/${page.url().replace('.', '-')}`	 
+    const folderName = `screenshots/${page.url().replace(/\.|\:/, '-')}`	 
     await fs.promises.mkdir(folderName, { recursive: true })
     const path = `${folderName}/${log ? log : Date.now()}.png`
     await page.screenshot({ path })
