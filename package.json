@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node --env-file=.env index.js",
+    "start": "node --env-file=.env server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -16,6 +16,7 @@
     "body-parser": "^1.20.2",
     "express": "^4.19.2",
     "json2csv": "6.0.0-alpha.2",
-    "playwright": "^1.39.0"
+    "playwright": "^1.39.0",
+    "pnpm": "^9.7.0"
   }
 }

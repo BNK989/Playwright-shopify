@@ -9,6 +9,10 @@ const port = 3000
 
 app.use(bodyParser.json())
 
+app.get('/', (req, res) => {
+    res.send('Hello World!')
+})
+
 app.post('/run-script', async (req, res) => {
     const { domain, category, options = {} } = req.body
     

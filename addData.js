@@ -1,7 +1,6 @@
 import retry from 'async-retry'
 import axios from 'axios'
 import fs from 'fs'
-import { getProductInternalId } from './getProductInternalId.js'
 import getYotpoStoreCode from './getYotpoStoreCode.js'
 import { parse } from 'json2csv'
 import { filterColorTags } from './utiles.js'
@@ -10,6 +9,7 @@ let YotpoStoreCode
 
 
 export async function addData(handleArr, domainName) {
+    console.log('addData:', 'handleArr', handleArr, 'domainName', domainName)
     const products = handleArr.map(h => ({ handle: h}))
     // const existingData = await fs.promises.readFile('data/results.json', {encoding: 'utf8'}).then(p => {
     //     if (p) {
@@ -37,8 +37,8 @@ export async function addData(handleArr, domainName) {
                 p.updated_at = productInternal.updated_at
                 p.tags = productInternal.tags
                 p.color_options = filterColorTags(productInternal.tags)
-                p.price = productInternal.variants[0].price
-                p.compare_at_price = productInternal.variants[0].compare_at_price
+                p.price = parseFloat(productInternal.variants[0].price) || productInternal.variants[0].price
+                p.compare_at_price = parseFloat(productInternal.variants[0].compare_at_price) || productInternal.variants[0].compare_at_price
                 p.img = productInternal.images[0].src
             }
         // }
@@ -72,6 +72,7 @@ export async function addData(handleArr, domainName) {
     
     return { success: true, data: products }
 } catch (error) {
+    console.error('addData function failed after retries:', error);
     return { success: false, error }
 }
     

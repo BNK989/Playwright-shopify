@@ -34,8 +34,8 @@ settings.json
 temp-test.js
 
 unused_plugins/
-data
-screenshots
+data/*
+screenshots/*
 
 getProductInternalId.js
 archive-index.js
