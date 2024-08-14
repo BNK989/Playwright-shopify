@@ -2,14 +2,15 @@ import retry from 'async-retry'
 import axios from 'axios'
 import fs from 'fs'
 import getYotpoStoreCode from './getYotpoStoreCode.js'
-import { parse } from 'json2csv'
 import { filterColorTags } from './utiles.js'
 
-let YotpoStoreCode
+let yotpoStoreCode
 
+export async function addData(handleArr, domain, options = {}) {
+    console.log('addData:', 'handleArr', handleArr, 'domain', domain)
 
-export async function addData(handleArr, domainName) {
-    console.log('addData:', 'handleArr', handleArr, 'domainName', domainName)
+    if(options?.yotpoStoreCode) yotpoStoreCode = options.yotpoStoreCode
+
     const products = handleArr.map(h => ({ handle: h}))
     // const existingData = await fs.promises.readFile('data/results.json', {encoding: 'utf8'}).then(p => {
     //     if (p) {
@@ -27,7 +28,7 @@ export async function addData(handleArr, domainName) {
         //     p.productInternalId = existingInternalID.productInternalId
         // } else {
             // const productInternalId = await getProductInternalId(p.id)
-            const url = `https://${domainName}/products/${p.handle}.json`
+            const url = `https://${domain}/products/${p.handle}.json`
             const productInternal = await axios.get(url).then(r => r.data.product)
             if (productInternal) {
                 p.id = productInternal.id
@@ -46,29 +47,29 @@ export async function addData(handleArr, domainName) {
     }
 
     for( const p of products ) {
-        const rating = await getRating(p.productInternalId, domainName, p.handle)
+        const rating = await getRating(p.id, domain, p.handle)
         if (!isNaN(rating)) {
             p.rating = rating
             p.ratingUpdateAt = new Date()
         }
     }
     
-    const folderName = `data/${domainName.replace('.', '-')}`	 
-    await fs.promises.mkdir(folderName, { recursive: true })
+    // const folderName = `data/${domain.replace('.', '-')}`	 
+    // await fs.promises.mkdir(folderName, { recursive: true })
     
-    fs.writeFile(`${folderName}/results.json`, JSON.stringify(products, null, 2), (err) => {
-        if (err) {
-          console.error('Error writing JSON file:', err);
-          return
-        }
-    })
+    // fs.writeFile(`${folderName}/results.json`, JSON.stringify(products, null, 2), (err) => {
+    //     if (err) {
+    //       console.error('Error writing JSON file:', err);
+    //       return
+    //     }
+    // })
 
-    fs.writeFile(`${folderName}/csv-results.csv`, parse(products), (err) => {
-        if (err) {
-          console.error('Error writing CSV file:', err);
-          return
-        }
-    })
+    // fs.writeFile(`${folderName}/csv-results.csv`, parse(products), (err) => {
+    //     if (err) {
+    //       console.error('Error writing CSV file:', err);
+    //       return
+    //     }
+    // })
     
     return { success: true, data: products }
 } catch (error) {
@@ -79,12 +80,10 @@ export async function addData(handleArr, domainName) {
 }
 
 async function getRating (productInternalId, siteName, handle) {
-    if (!YotpoStoreCode) YotpoStoreCode = await getYotpoStoreCode(`https://${siteName}/products/${handle}`).then(r => r.res)
-
-    const BASE_LINK = `https://api-cdn.yotpo.com/v3/storefront/store/${YotpoStoreCode}/product/`
+    if(yotpoStoreCode === false) return
+    if (!yotpoStoreCode) yotpoStoreCode = await getYotpoStoreCode(siteName, handle).then(r => r?.res)
+    if(yotpoStoreCode === false) return
+    const BASE_LINK = `https://api-cdn.yotpo.com/v3/storefront/store/${yotpoStoreCode}/product/`
     const res = await axios.get(`${BASE_LINK}${productInternalId}/ratings`).then(r => r.data)
     return res?.bottomline?.totalReviews
 }
-
-
-const handleArr = ['s16643_brown']

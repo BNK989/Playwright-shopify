@@ -1,17 +1,16 @@
 import pw from 'playwright'
-import fs from 'fs'
-import { cleanProductData, takeScreenShot } from './utiles.js'
-import { parse } from 'json2csv'
 
 const SBR_CDP = `wss://${process.env.SBR_USERNAME}:${process.env.PASSWORD}@${process.env.HOST}`
 const isLocal = true
 
-export default async function main(domain = 'testshop.com', collectionName = 'new-in', userOptions ) {
+export default async function main(domain, collection, userOptions ) {
     const options = {
         ...userOptions, 
         maxProducts: userOptions.maxProducts || 30, 
         minProducts: userOptions.minProducts || 1,
-        outputFormat: userOptions.outputFormat || 'csv'
+        outputFormat: userOptions.outputFormat || 'csv',
+        handleLocator: userOptions.handleLocator || 'div.card--product',
+        attribute: userOptions.attribute || 'href',
     }
     if (!isLocal) console.log('🟡 Connecting to scraping browser...')
     const browser = isLocal ? null : await pw.chromium.connectOverCDP(SBR_CDP)
@@ -22,49 +21,33 @@ export default async function main(domain = 'testshop.com', collectionName = 'ne
     const page = isLocal ? await context.newPage() : await browser.newPage()
 
     try{
-        await page.goto(`https://${domain}/collections/${collectionName}`, {
+        await page.goto(`https://${domain}/collections/${collection}`, {
             timeout: 3 * 60 * 1000
         })
         console.log('Navigated! Scrapping page content')
         // await page.locator('button.recommendation-modal__close-button').click()
         
-        await takeScreenShot(page, 'got page')
-
-        
         const data = []
         let products = []
         let atm = 0
         while(products.length < options.minProducts || atm < 3) {
-            products = await page.locator('product-card.product-card').all()
+            // products = await page.locator('product-card.product-card').all()
+            products = await page.locator(options.handleLocator).all()
             atm++
         }
 
         for( const p of products){
         
-            // console.log('title', await products.locator('div.product-card__title').allInnerTexts())
             const product = {
-                id: await p.locator('a.product-card__image').first().getAttribute('href') || '',
-                title: await p.locator('div.product-card__title').allInnerTexts().then(v => v[0]) || '',
-                fullPrice: await p.locator('.strike-through-price').allInnerTexts().then(v => v[0]) || 0,
-                price: await p.locator('.price-highlight').allInnerTexts().then(v => v[0]) || 0,
-                imgUrl: await p.locator('img').first().getAttribute('src').then(src => src.substring(2)) || '',
+                handle: await p.getAttribute(options.attribute) || '',
+
             }
 
             data.push(product)
         }
-
-        console.log('Total products data', data.length)
-        
-        if (!data.length) throw new Error('no items found')
-        const cleanedData = cleanProductData(data)
-        const folderName = `data/${domain.replace('.', '-')}`	 
-        await fs.promises.mkdir(folderName, { recursive: true })
-        await fs.promises.writeFile(`${folderName}/base-${domain}-${collectionName}-${Date.now()}.json`, JSON.stringify(cleanedData, null, 2))
-        await fs.promises.writeFile(`${folderName}/base-${domain}-${collectionName}-${Date.now()}.csv`, parse(cleanedData))
-        return {success: true, data: cleanedData}
+        return {success: true, data: data.map(p => p.handle.split('/').pop())}
 
     } catch(err) {
-        await takeScreenShot(page, 'Error')
         console.error("there was an error", err)
         return {success: false, error: err}
 

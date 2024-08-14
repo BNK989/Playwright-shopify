@@ -1,11 +1,12 @@
 import pw from 'playwright'
 import fs from 'fs'
-import { takeScreenShot, getDomain } from './utiles.js'
+import { getDomain } from './utiles.js'
 
 const SBR_CDP = `wss://${process.env.SBR_USERNAME}:${process.env.PASSWORD}@${process.env.HOST}`
 const isLocal = true
 
-export default async function getYotpoStoreCode(url = 'https:/test-store/products/test-handle') {
+export default async function getYotpoStoreCode(siteName, handle) {
+  const url = `https://${siteName}/products/${handle}`
 
     const storeName = getDomain(url)
     
@@ -37,26 +38,35 @@ export default async function getYotpoStoreCode(url = 'https:/test-store/product
         await page.waitForTimeout(1000 * 20 )
 
         console.log('got requests', requests.length)
+        if(!requests.length){
+          console.log('Store Code not found')
+          existingData.push({storeName, storeCode: false})
+          fs.writeFile('data/siteCodes.json', JSON.stringify(existingData, null, 2), (err) => {
+            if (err) {
+              console.error('Error writing JSON file:', err)
+              return
+            }
+          })
+          return {success: true, res: false}
+        }
         const storeCodeRegex = /store\/(.*?)\/product/
         for (let requestUrl of requests) {
             const match = requestUrl.match(storeCodeRegex)
             if (match && match[1]) {
               console.log('Store Code:', match[1])
             existingData.push({storeName, storeCode: match[1]})
-              fs.writeFile('data/siteCodes.json', JSON.stringify(existingData, null, 2), (err) => {
-                if (err) {
-                  console.error('Error writing JSON file:', err)
-                  return
-                }
+            fs.writeFile('data/siteCodes.json', JSON.stringify(existingData, null, 2), (err) => {
+              if (err) {
+                console.error('Error writing JSON file:', err)
+                return
+              }
             })
-              return {success: false, res: match[1]}
-            }
+            return {success: false, res: match[1]}
           }
+        }
         
-          console.log('Store Code not found');
 
     } catch(err) {
-        await takeScreenShot(page, 'Error')
         console.error("there was an error", err)
         return {success: false, error: err}
 
