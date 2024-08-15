@@ -45,7 +45,8 @@ export default async function main(domain, collection, userOptions ) {
 
             data.push(product)
         }
-        return {success: true, data: data.map(p => p.handle.split('/').pop())}
+        const uniqueHandles = [...new Set(data.map(p => p.handle.split('/').pop()))]
+        return {success: true, data: uniqueHandles}
 
     } catch(err) {
         console.error("there was an error", err)

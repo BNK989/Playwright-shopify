@@ -9,7 +9,7 @@ import getYotpoStoreCode from './getYotpoStoreCode.js'
 const RETRY = {
     retries: 1,
     onRetry: (err) => {
-        console.error('🔸 retrying...', err);
+        console.error('🔸 retrying...', err)
     }
 }
 
@@ -26,14 +26,11 @@ app.post('/run-script', async (req, res) => {
     const { domain, collection, options = {} } = req.body
     
     try {
-    const result = await retry(() => main(domain, collection, options), {
-        retries: 1,
-        onRetry: (err) => {
-            console.error('🔸 retrying...', err);
-        },
-    })
+    const result = await retry(() => main(domain, collection, options),
+    RETRY
+)
 
-    console.log('Main function completed successfully:', result.success);
+    console.log('Main function completed successfully:', result.success)
     res.status(200).json({ success: true, data: result.data })
 
     } catch (error) {
@@ -44,19 +41,25 @@ app.post('/run-script', async (req, res) => {
 
 app.post('/get-collection-handles', async (req, res) => {
     const { domain, collection, options = {} } = req.body
+    let tryCount = 0
 
     if(!domain || !collection) return
     
     try {
-        const result = await retry(() => {
-            if(options?.usePlaywright) return main(domain, collection, options)
-            else return getCollectionHandles(domain, collection)
+        let result = await retry(() => {
+            if(options?.usePlaywright || tryCount >= 1 ) return main(domain, collection, options)
+            else return getCollectionHandles(domain, collection, options)
         },
-        RETRY
-    )
+        {
+            retries: 1,
+            onRetry: (err) => {
+                tryCount++
+                console.error('🔸 retrying...', err)
+            }
+        })
 
-    console.log('getCollectionHandles function completed successfully:', result.success);
-    res.status(200).json({ success: true, data: result.data })
+    console.log('getCollectionHandles function completed successfully:', result?.success);
+    res.status(200).json({ success: true, data: result?.data })
 
     } catch (error) {
     console.error('getCollectionHandles function failed after retries:', error);
@@ -68,12 +71,8 @@ app.post('/add-data', async (req, res) => {
     const { handleArr, domain, options = {} } = req.body
     
     try {
-    const result = await retry(() => addData(handleArr, domain, options), {
-        retries: 1,
-        onRetry: (err) => {
-            console.error('🔸 retrying...', err);
-        },
-    })
+    const result = await retry(() => addData(handleArr, domain, options), 
+    RETRY)
 
     console.log('addData function completed successfully:', result.success);
     res.status(200).json({ success: true, data: result.data })
@@ -88,12 +87,8 @@ app.post('/get-yotpo-store-code', async (req, res) => {
     const { domain, handle } = req.body
     
     try {
-    const result = await retry(() => getYotpoStoreCode(domain, handle), {
-        retries: 1,
-        onRetry: (err) => {
-            console.error('🔸 retrying...', err);
-        },
-    })
+    const result = await retry(() => getYotpoStoreCode(domain, handle), 
+    RETRY)
 
     console.log('Main function completed successfully:', result.success);
     res.status(200).json({ success: true, data: result.res })
